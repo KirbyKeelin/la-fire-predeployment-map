@@ -3,7 +3,7 @@
 {
   "name": "La Fire Predeployment Map",
   "schemaVersion": 1,
-  "description": "Interactive map of LA wildfire pre-deployment staging areas with severity tiers, plus briefing on triggers (Burning Index, Red Flag, PDS), decision timeline, and the Jan 2025 case study. Sources: LAFD after-action review, LA EMD report, LAFD/Cal OES/county releases, news coverage.",
+  "description": "Two-page interactive briefing on LA wildfire readiness. Page 1: map of pre-deployment staging areas with severity tiers, triggers (Burning Index, Red Flag, PDS), decision timeline, and the Jan 2025 case study. Page 2: call & response clocks for the 2024–25 fires — first report, dispatch, first units on scene, evacuation orders, and time to 100% containment, with official incident reports for each fire. Sources: LAFD & McChrystal (LA County) after-action reviews, CAL FIRE incident pages, InciWeb, AP/ABC7 records investigations, agency releases.",
   "mcpTools": [],
   "mcpServerNames": []
 }
@@ -789,10 +789,66 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .srcs a:hover { text-decoration: underline; }
   .srcs div { break-inside: avoid; margin-bottom: 5px; }
   .foot { margin-top: 20px; font-size: 12px; color: var(--muted); max-width: 90ch; }
+  /* ---- pages & tabs ---- */
+  .tabs { display: flex; gap: 4px; background: var(--surface-1); border: 1px solid var(--border);
+          border-radius: 10px; padding: 5px; width: max-content; max-width: 100%; margin-bottom: 18px; }
+  .tab { border: none; background: transparent; color: var(--text-secondary);
+         font: 600 13.5px/1 system-ui, -apple-system, "Segoe UI", sans-serif;
+         padding: 9px 16px; border-radius: 7px; cursor: pointer; }
+  .tab:hover { color: var(--text-primary); background: var(--chip-bg); }
+  .tab[aria-selected="true"] { background: var(--station); color: #fff; }
+  .tab:focus-visible { outline: 2px solid var(--station); outline-offset: 2px; }
+  .page[hidden] { display: none; }
+  .xlink { color: var(--station); text-decoration: none; font-weight: 600; }
+  .xlink:hover { text-decoration: underline; }
+  .when { font-weight: 400; color: var(--muted); font-size: 12.5px; margin-left: 7px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 12px; }
+  .chip { background: var(--chip-bg); color: var(--text-secondary); font-size: 11.5px; font-weight: 600;
+          padding: 3px 9px; border-radius: 99px; }
+  .chip.bad { background: rgba(180,37,37,0.10); color: var(--tier1); }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root .chip.bad { color: #e66a6a; background: rgba(230,106,106,0.12); }
+  }
+  .rpts { font-size: 12.5px; color: var(--text-secondary); margin-top: 10px;
+          border-top: 1px solid var(--grid); padding-top: 9px; }
+  .rpts a { color: var(--station); text-decoration: none; }
+  .rpts a:hover { text-decoration: underline; }
+  /* ---- containment bar chart ---- */
+  .bchart { list-style: none; padding: 0; margin: 6px 0 0; }
+  .brow { display: flex; align-items: center; gap: 10px; min-height: 27px; border-radius: 6px; cursor: default; }
+  .brow:focus-visible { outline: 2px solid var(--station); outline-offset: 1px; }
+  .brow .bl { width: 128px; text-align: right; font-size: 12.5px; color: var(--text-secondary); flex: none; }
+  .btrack { flex: 1; display: flex; align-items: center; position: relative; height: 27px;
+            border-left: 1px solid var(--baseline);
+            background: repeating-linear-gradient(to right,
+              transparent, transparent calc(25% - 1px), var(--grid) calc(25% - 1px), var(--grid) 25%); }
+  .bfill { height: 14px; background: var(--station); border-radius: 0 4px 4px 0; flex: none; }
+  .brow:hover .bfill, .brow:focus-visible .bfill { filter: brightness(1.15); }
+  .bval { font-size: 12px; font-weight: 600; color: var(--text-primary); margin-left: 7px;
+          font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .bax { display: flex; margin-top: 4px; }
+  .bax .sp { width: 138px; flex: none; }
+  .bax .ax { flex: 1; position: relative; height: 16px; font-size: 11px; color: var(--muted); }
+  .bax .ax span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+  .bax .ax span:first-child { transform: none; }
+  .bax .ax span:last-child { transform: translateX(-100%); }
+  @media (max-width: 600px) { .brow .bl { width: 86px; font-size: 11px; } .bax .sp { width: 96px; } }
+  /* ---- shared tooltip ---- */
+  #tt { position: fixed; z-index: 10000; background: var(--surface-1); border: 1px solid var(--border);
+        border-radius: 8px; padding: 8px 11px; font-size: 12.5px; max-width: 320px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.14); pointer-events: none; color: var(--text-secondary); }
+  #tt .t1 { font-weight: 700; color: var(--text-primary); font-size: 13px; margin-bottom: 2px; }
+  #tt[hidden] { display: none; }
 </style>
 </head>
 <body class="viz-root">
 <div class="wrap">
+  <div class="tabs" role="tablist" aria-label="Pages">
+    <button class="tab" id="tab-map" role="tab" aria-selected="true" aria-controls="page-map">Pre-deployment map</button>
+    <button class="tab" id="tab-response" role="tab" aria-selected="false" aria-controls="page-response">Call &amp; response times</button>
+  </div>
+
+<section id="page-map" class="page" role="tabpanel" aria-labelledby="tab-map">
   <h1>Where LA fire departments pre-stage engines before wildfires</h1>
   <p class="sub">Fire engines are pre-positioned <strong>before any fire exists</strong> — the trigger is forecast weather (Santa Ana wind + dry fuel), not the distance to a burning fire. This map shows the fire stations the LAFD actually used as pre-deployment posts in 2025–26, the hazard areas that doctrine says to cover, and the fires that tested the system.</p>
 
@@ -881,6 +937,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           </tr>
         </tbody>
       </table>
+      <p style="margin-top:10px;"><a class="xlink" href="#response" data-goto="response">Minute-by-minute call &amp; response clocks for every fire → page 2</a></p>
     </div>
 
     <div class="card full">
@@ -929,6 +986,163 @@ svg.leaflet-image-layer.leaflet-interactive path {
   </div>
 
   <p class="foot">Notes: hazard-area polygons are schematic approximations of CAL FIRE Very High Fire Hazard Severity Zone terrain (official parcel lookup: LA GeoHub / OSFM). Station coordinates are actual station addresses. "Pre-deployment" here means pre-ignition staging; base camps and perimeter staging during active fires are a separate operation. Fire statistics rounded; Eaton & Palisades tolls per official 2025–26 tallies. Compiled July 17, 2026.</p>
+</section>
+
+<section id="page-response" class="page" role="tabpanel" aria-labelledby="tab-response" hidden>
+  <h1>From first call to containment — how fast the response came</h1>
+  <p class="sub">Call &amp; response clocks for the fires on the map's 2024–25 layer: when each fire was first reported, when the first units reached it, when residents were ordered out, and how long full containment took. All times Pacific. Where the official incident log and first news reports differ, both are shown. <strong>Minute-level dispatch-to-arrival logs have only been made public for the Palisades and Eaton fires</strong> — for the rest, released records start at the first-report clock.</p>
+
+  <div class="statrow">
+    <div class="stat"><div class="v num">1 min</div><div class="k">Palisades: first 911 call (10:29 AM) → first engine dispatched (10:30 AM)</div></div>
+    <div class="stat"><div class="v num">≈19 min</div><div class="k">Palisades: 911 call → first unit at the origin, a ~4-mile climb into the Highlands</div></div>
+    <div class="stat"><div class="v num">18 min</div><div class="k">Eaton: first report → 3 helicopters over the fire — all aircraft wind-grounded 9 min later</div></div>
+    <div class="stat"><div class="v num">98 min</div><div class="k">Palisades: 911 call → first evacuation order (12:07 PM); homes were burning by 11:27 AM</div></div>
+    <div class="stat"><div class="v num">9 h 7 min</div><div class="k">Eaton: first report → evacuation order for west Altadena, where nearly all 19 deaths occurred</div></div>
+  </div>
+
+  <div class="grid2">
+
+    <div class="card full">
+      <h2>How to read a response clock</h2>
+      <p>A fire response is a chain of measured intervals. LAFD logs them as <strong>call processing</strong> (911 call entered in dispatch → first unit dispatched), <strong>turnout</strong> (station alert → wheels rolling), and <strong>travel</strong> (en route → first unit on scene). The NFPA 1710 urban benchmarks: dispatch in ≤ 64 seconds, turnout in ≤ 80 seconds, first-engine travel in ≤ 4 minutes — roughly a 5½-minute call-to-arrival standard for 90% of incidents.</p>
+      <p><strong>Wildfires stretch every link of that chain.</strong> The dispatch clock still runs in seconds (Palisades: about one minute), but travel is governed by terrain — the ~7-minute estimate to the Palisades dispatch address became ≈19 minutes to the actual origin up a single mountain road. And two clocks that barely exist for a structure fire end up deciding the outcome: <strong>time-to-evacuation-order</strong> and <strong>time-to-containment</strong>. Those are the clocks this page compares.</p>
+      <p class="mapnote">Definitions: <a class="xlink" href="https://lafd.org/how-we-calculate-results">LAFD response-time metrics</a> · <a class="xlink" href="https://www.iaff.org/wp-content/uploads/Departments/Fire_EMS_Department/30541_Summary_Sheet_NFPA_1710_standard.pdf">NFPA 1710 summary (IAFF)</a></p>
+    </div>
+
+    <div class="card full">
+      <h2>The seven fires, clock against clock <span style="font-weight:400;color:var(--muted);font-size:12.5px;">(details &amp; incident reports in the cards below)</span></h2>
+      <table>
+        <thead><tr><th>Fire</th><th>First reported</th><th>First response on scene</th><th>First evacuation order</th><th>100% contained</th><th>Size · losses</th></tr></thead>
+        <tbody>
+          <tr><td class="em">Palisades<br><span class="when">Jan 7, 2025</span></td><td>10:29 AM 911 call (spotted 10:27)</td><td>~10:48 AM — first unit at origin (≈19 min)</td><td>12:07 PM (+1 h 38 min); "be ready" alert 11:12 AM</td><td class="num">Jan 31 · 24 d</td><td>23,448 ac · 6,837 structures destroyed · 12 deaths</td></tr>
+          <tr><td class="em">Eaton<br><span class="when">Jan 7, 2025</span></td><td>6:18 PM</td><td>Crews responding 6:25 PM (≈7 min); helicopters over fire 6:36 PM — all aircraft grounded 6:45 PM</td><td>7:12–7:26 PM east zones (+~1 h); <strong>3:25 AM for west of Lake Ave (+9 h 7 min)</strong></td><td class="num">Jan 31 · 24 d</td><td>14,021 ac · 9,418 destroyed · 19 deaths</td></tr>
+          <tr><td class="em">Hurst<br><span class="when">Jan 7, 2025</span></td><td>~10:10 PM (log: 10:29 PM)</td><td>Initial-attack log not released; 5-agency unified command held it north of I-210</td><td>Same night — orders for 44,000, warnings for 27,000</td><td class="num">Jan 16 · 8 d 10 h</td><td>799 ac · 2 damaged · 0 deaths</td></tr>
+          <tr><td class="em">Sunset<br><span class="when">Jan 8, 2025</span></td><td>~5:30 PM (log: 5:57 PM)</td><td>Engines already massed nearby (day-2 surge posture); helicopters worked overnight</td><td>That evening, Hollywood Blvd ↔ Mulholland; lifted next afternoon</td><td class="num">Jan 9 · ≈22 h</td><td>43 ac · 0 structures · 0 deaths</td></tr>
+          <tr><td class="em">Kenneth<br><span class="when">Jan 9, 2025</span></td><td>~2:30 PM (log: 3:34 PM)</td><td>LA City + Ventura Co. unified; retardant line at the neighborhood edge; 900 extra firefighters surged by 5:30 PM</td><td>That afternoon, Vanowen St → Burbank Blvd</td><td class="num">Jan 12 · ≈3 d</td><td>1,052 ac · 0 structures</td></tr>
+          <tr><td class="em">Hughes<br><span class="when">Jan 22, 2025</span></td><td>10:42 AM (log: 10:53 AM)</td><td>Pre-positioned county/state force — "highly successful initial attack"; 1,745 personnel by day 2</td><td>Within hours — 31,000 ordered, ~20,000 warned; I-5 closed</td><td class="num">Jan 31 · 8 d 21 h</td><td>10,425 ac · 1 damaged · 0 destroyed</td></tr>
+          <tr><td class="em">Franklin<br><span class="when">Dec 9, 2024</span></td><td>10:50 PM</td><td>Initial-attack log not released (LACoFD + CAL FIRE IMT4)</td><td>Overnight — Malibu orders; Pepperdine sheltered in place</td><td class="num">Dec 18 · 8 d 22 h</td><td>4,086 ac · 20 destroyed · 28 damaged</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card full">
+      <h2>Days from first report to 100% containment</h2>
+      <ul class="bchart">
+        <li class="brow" tabindex="0" aria-label="Sunset Fire: contained in about 22 hours, January 8 5:57 PM to January 9 3:58 PM" data-f="Sunset Fire" data-s="Jan 8, 5:57 PM → Jan 9, 3:58 PM (≈22 h)" data-n="43 ac · 0 structures — engines were already massed nearby"><span class="bl">Sunset</span><span class="btrack"><span class="bfill" style="width:3.8%"></span><span class="bval">22 h</span></span></li>
+        <li class="brow" tabindex="0" aria-label="Kenneth Fire: contained in 2 days 17 hours, January 9 2:30 PM to January 12 7:48 AM" data-f="Kenneth Fire" data-s="Jan 9, ~2:30 PM → Jan 12, 7:48 AM (2 d 17 h)" data-n="1,052 ac · 0 structures — retardant line held at the neighborhood edge"><span class="bl">Kenneth</span><span class="btrack"><span class="bfill" style="width:11.3%"></span><span class="bval">2 d 17 h</span></span></li>
+        <li class="brow" tabindex="0" aria-label="Hurst Fire: contained in 8 days 10 hours, January 7 10:10 PM to January 16 8:00 AM" data-f="Hurst Fire" data-s="Jan 7, ~10:10 PM → Jan 16, 8:00 AM (8 d 10 h)" data-n="799 ac · 2 damaged — held north of the I-210"><span class="bl">Hurst</span><span class="btrack"><span class="bfill" style="width:35%"></span><span class="bval">8 d 10 h</span></span></li>
+        <li class="brow" tabindex="0" aria-label="Hughes Fire: contained in 8 days 21 hours, January 22 10:42 AM to January 31 8:00 AM" data-f="Hughes Fire" data-s="Jan 22, 10:42 AM → Jan 31, 8:00 AM (8 d 21 h)" data-n="10,425 ac · 1 damaged, 0 destroyed — pre-positioned posture"><span class="bl">Hughes</span><span class="btrack"><span class="bfill" style="width:37%"></span><span class="bval">8 d 21 h</span></span></li>
+        <li class="brow" tabindex="0" aria-label="Franklin Fire: contained in 8 days 22 hours, December 9 10:50 PM to December 18 8:59 PM" data-f="Franklin Fire" data-s="Dec 9, 10:50 PM → Dec 18, 8:59 PM (8 d 22 h)" data-n="4,086 ac · 20 destroyed · 28 damaged"><span class="bl">Franklin</span><span class="btrack"><span class="bfill" style="width:37.2%"></span><span class="bval">8 d 22 h</span></span></li>
+        <li class="brow" tabindex="0" aria-label="Eaton Fire: contained in 24 days, January 7 6:18 PM to January 31" data-f="Eaton Fire" data-s="Jan 7, 6:18 PM → Jan 31 (24 d, day-level)" data-n="14,021 ac · 9,418 destroyed · 19 deaths"><span class="bl">Eaton</span><span class="btrack"><span class="bfill" style="width:98.2%"></span><span class="bval">24 d</span></span></li>
+        <li class="brow" tabindex="0" aria-label="Palisades Fire: contained in 24 days, January 7 10:29 AM to January 31" data-f="Palisades Fire" data-s="Jan 7, 10:29 AM → Jan 31 (24 d, day-level)" data-n="23,448 ac · 6,837 destroyed · 12 deaths"><span class="bl">Palisades</span><span class="btrack"><span class="bfill" style="width:99.6%"></span><span class="bval">24 d</span></span></li>
+      </ul>
+      <div class="bax"><span class="sp"></span><div class="ax"><span style="left:0">0</span><span style="left:25%">6 d</span><span style="left:50%">12 d</span><span style="left:75%">18 d</span><span style="left:100%">24 d</span></div></div>
+      <p class="mapnote">Official incident-log spans (CAL FIRE); day-level precision for the two 24-day sieges. Hover or focus a bar for the exact span.</p>
+    </div>
+
+    <div class="card full">
+      <h2>Palisades Fire<span class="when">Jan 7, 2025 · Pacific Palisades (LAFD)</span></h2>
+      <div class="chips"><span class="chip bad">23,448 acres</span><span class="chip bad">6,837 structures destroyed</span><span class="chip bad">12 deaths</span><span class="chip">Contained in 24 days</span><span class="chip">Cause: arson — rekindle of the Jan 1 Lachman Fire (ATF)</span></div>
+      <ul class="timeline">
+        <li><span class="t">Jan 1 · 12:01 AM</span>The "Lachman Fire" ignites above the Palisades and is knocked down by morning — but keeps smoldering underground for six days. ATF later concludes the two fires are "one and the same."</li>
+        <li><span class="t">Jan 7 · 10:27–10:30 AM</span>Fire spotted 10:27; first 911 call 10:29, during a PDS Red Flag (BI 268). First engine dispatched 10:30 — <strong>call processing ≈1 minute</strong>.</li>
+        <li><span class="t">10:33 AM</span>A Station 69 captain, still en route, requests 10 additional engines. No engines had been pre-staged anywhere in the Palisades (see map page).</li>
+        <li><span class="t">≈10:48 AM</span><strong>First unit reaches the origin — ≈19 minutes after the call</strong> (a ~4-mile climb; the dispatch estimate itself was ~7 minutes). 10 acres by 10:46.</li>
+        <li class="hot"><span class="t">11:12 AM → 12:07 PM</span>"Be ready" wireless alert 11:12; homes burning by 11:27; <strong>first evacuation order 12:07 PM — 98 minutes after the 911 call</strong> and ~40 minutes after homes began burning (AP). Roads were already gridlocked.</li>
+        <li class="hot"><span class="t">Jan 7–9</span>200 acres by 11:43 AM; <strong>0% containment for 55+ hours</strong>; 20% of hydrants run dry in the upper Palisades as tanks drain.</li>
+        <li><span class="t">Jan 31</span>100% contained — 24 days. Oct 8, 2025: a suspect is arrested on a federal arson charge.</li>
+      </ul>
+      <p class="rpts"><strong>Incident reports &amp; records:</strong> <a href="https://www.fire.ca.gov/incidents/2025/1/7/palisades-fire">CAL FIRE incident page</a> · <a href="https://lafd.org/sites/default/files/pdf_files/Palisades_AARR_10_08_2025_final.pdf">LAFD after-action review (PDF)</a> · <a href="https://abc7.com/post/7-side-obtains-report-showing-initial-response-palisades-fire/15834567/">Initial-dispatch records (ABC7)</a> · <a href="https://www.pbs.org/newshour/nation/homes-were-burning-and-roads-jammed-before-evacuation-order-for-palisades-fire-ap-finds">AP evacuation-alert investigation</a> · <a href="https://www.nbclosangeles.com/news/california-wildfires/palisades-fire-arrest-timeline/3788707/">ATF origin findings &amp; arrest (NBC LA)</a></p>
+    </div>
+
+    <div class="card full">
+      <h2>Eaton Fire<span class="when">Jan 7, 2025 · Altadena (LACoFD / county)</span></h2>
+      <div class="chips"><span class="chip bad">14,021 acres</span><span class="chip bad">9,418 structures destroyed</span><span class="chip bad">19 deaths — nearly all west of Lake Ave</span><span class="chip">Contained in 24 days</span><span class="chip">Suspected cause: SCE transmission lines (DOJ suit, Sep 2025)</span></div>
+      <ul class="timeline">
+        <li><span class="t">6:18 PM</span>First reported at the base of Eaton Canyon (Altadena Dr × Canyon Close). 10 acres within 8 minutes.</li>
+        <li><span class="t">6:25–6:36 PM</span><strong>Crews responding within ≈7 minutes</strong>; three night-flying helicopters over the fire by 6:36 — ≈18 minutes after report.</li>
+        <li class="hot"><span class="t">6:45 PM</span><strong>All aircraft grounded</strong> by 60–100 mph gusts after ~30 minutes of flight ops — the decisive air weapon is gone for the night.</li>
+        <li><span class="t">6:48 → 7:26 PM</span>Advisory alert to 12 zones 6:48; air ops recommends evacuations 6:57; first orders 7:12–7:26 PM for zones east of the fire — a ~15-minute recommendation-to-order turnaround (AP).</li>
+        <li class="hot"><span class="t">12:55 → 3:25 AM</span>First validated structure fire <strong>west</strong> of Lake Ave 12:55 AM; field crews report fire running west 2:18 AM; no evacuation direction reaches OEM between 1:12 and 3:00 AM (the McChrystal "gap"). West-of-Lake orders finally issue at <strong>3:25 AM — 9 h 7 min after first report</strong>.</li>
+        <li class="hot"><span class="t">After 5:00 AM</span>The fire front crosses Lake Avenue into west Altadena — the area ordered out last is where nearly all 19 deaths occur (all 17 then-confirmed deaths in NBC's zone analysis).</li>
+        <li><span class="t">Jan 31</span>100% contained — 24 days.</li>
+      </ul>
+      <p class="rpts"><strong>Incident reports &amp; records:</strong> <a href="https://www.fire.ca.gov/incidents/2025/1/7/eaton-fire">CAL FIRE incident page</a> · <a href="https://file.lacounty.gov/SDSInter/lac/1192777_AAR_EatonFireSynopsisofFindingsandTimeline.pdf">McChrystal after-action synopsis &amp; timeline (PDF)</a> · <a href="https://lacounty.gov/aar/">LA County after-action review hub</a> · <a href="https://www.nbcnews.com/news/us-news/eaton-fire-deaths-los-angeles-evacuation-orders-took-hours-rcna188729">NBC News: deaths vs. order timing</a></p>
+    </div>
+
+    <div class="card">
+      <h2>Hurst Fire<span class="when">Jan 7, 2025 · Sylmar</span></h2>
+      <div class="chips"><span class="chip">799 acres</span><span class="chip">2 structures damaged</span><span class="chip">0 deaths</span><span class="chip">8 d 10 h to 100%</span></div>
+      <ul class="timeline">
+        <li><span class="t">~10:10 PM</span>First reported off Diamond Rd (official log: 10:29 PM) — the day's third major start. 50 acres in 10 minutes, 100 in 30.</li>
+        <li><span class="t">Overnight</span>Evacuation orders for ~44,000 north of the I-210 the same night (+27,000 warned). ~300 acres by 1:00 AM, ~500 by 1:49 AM.</li>
+        <li><span class="t">Jan 8–9</span>Five-agency unified command (LAFD, LACoFD, ANF, LASD, CAL FIRE) holds the fire <strong>north of the I-210</strong>, ~300 personnel — inside the pre-deployment zone, with a strike team posted at Station 87.</li>
+        <li><span class="t">Jan 16 · 8:00 AM</span>100% contained at 799 acres, largely inside the 2019 Saddleridge scar. SCE reported damage at a transmission tower near the origin to the CPUC.</li>
+      </ul>
+      <p class="rpts"><strong>Reports:</strong> <a href="https://www.fire.ca.gov/incidents/2025/1/7/hurst-fire">CAL FIRE incident page</a> · <a href="https://inciweb.wildfire.gov/incident-publication/caanf-hurst-fire/hurst-fire-evening-update-01-09-2025">InciWeb updates</a> · <a href="https://www.foxla.com/news/hurst-fire-socal-edison-reports-damage-near-tower-around-time-fire-sparked">SCE tower report (FOX 11)</a></p>
+    </div>
+
+    <div class="card">
+      <h2>Sunset Fire<span class="when">Jan 8, 2025 · Hollywood Hills</span></h2>
+      <div class="chips"><span class="chip">43 acres</span><span class="chip">0 structures</span><span class="chip">0 deaths</span><span class="chip">≈22 h to 100%</span></div>
+      <ul class="timeline">
+        <li><span class="t">~5:30 PM</span>First reports on Solar Dr above Runyon Canyon (official log: 5:57 PM) — day 2 of the siege, with engines already massed citywide and Station 82's task force minutes away.</li>
+        <li><span class="t">6:15 PM</span>Just over 40 acres, 0% contained — evacuation orders from Hollywood Blvd up to Mulholland.</li>
+        <li><span class="t">Overnight</span>Helicopters fly drops all night despite ~80 mph gusts; forward progress stops in the first hours and the fire never grows past ~43 acres.</li>
+        <li><span class="t">Jan 9 · afternoon</span>Orders lifted; <strong>100% contained ≈22 hours after ignition</strong> with zero structures lost — the counter-example reviewers point to.</li>
+      </ul>
+      <p class="rpts"><strong>Reports:</strong> <a href="https://www.fire.ca.gov/incidents/2025/1/8/sunset-fire">CAL FIRE incident page</a> · <a href="https://www.fire.ca.gov/incidents/2025/1/8/sunset-fire/updates/a3808412-d47b-4d03-ae45-cc4fda49dcea">CAL FIRE update log</a> · <a href="https://www.cbsnews.com/losangeles/news/sunset-fire-hollywood-hills-windstorm/">CBS LA coverage</a></p>
+    </div>
+
+    <div class="card">
+      <h2>Kenneth Fire<span class="when">Jan 9, 2025 · West Hills</span></h2>
+      <div class="chips"><span class="chip">1,052 acres</span><span class="chip">0 structures</span><span class="chip">≈3 d to 100%</span><span class="chip">Cause: debris burning (CAL FIRE)</span></div>
+      <ul class="timeline">
+        <li><span class="t">~2:30 PM</span>First reported at a trailhead off Victory Blvd (official log: 3:34 PM) — already ~50 acres at first size-up.</li>
+        <li><span class="t">Afternoon</span>LA City + Ventura Co. unified command; air tankers paint a retardant line at the edge of the West Hills neighborhoods; ~1,000 acres within ~2½ hours; 900 additional firefighters surged by 5:30 PM.</li>
+        <li class="hot"><span class="t">~4:00 PM</span>The response's worst failure is an alerting one — an evacuation alert meant for this fire goes to <strong>nearly 10 million phones countywide</strong> in error.</li>
+        <li><span class="t">Jan 12 · 7:48 AM</span>100% contained at 1,052 acres; the line at the neighborhood edge held — no structures lost.</li>
+      </ul>
+      <p class="rpts"><strong>Reports:</strong> <a href="https://www.fire.ca.gov/incidents/2025/1/9/kenneth-fire">CAL FIRE incident page</a> · <a href="https://en.wikipedia.org/wiki/Kenneth_Fire">Incident summary (Wikipedia)</a></p>
+    </div>
+
+    <div class="card">
+      <h2>Hughes Fire<span class="when">Jan 22, 2025 · Castaic</span></h2>
+      <div class="chips"><span class="chip">10,425 acres</span><span class="chip">1 damaged · 0 destroyed</span><span class="chip">0 deaths</span><span class="chip">8 d 21 h to 100%</span></div>
+      <ul class="timeline">
+        <li><span class="t">10:42 AM</span>First reported at Lake Hughes Rd (official log: 10:53 AM) — mid-PDS posture: state and county forces pre-positioned since Jan 19, LAFD's 35-engine recall active.</li>
+        <li><span class="t">By 1:11 PM</span>5,054 acres at 0% — a spread rate in Palisades territory. 31,000 ordered out, ~20,000 warned; I-5 closed.</li>
+        <li><span class="t">Day 1–2</span>"A highly successful initial attack" (InciWeb) — aggressive air and ground work including night ops; 1,745 personnel; <strong>36% contained by the next evening</strong>.</li>
+        <li><span class="t">Jan 31 · 8:00 AM</span>100% at 10,425 acres — a Palisades-scale run rate ended with one damaged structure and no deaths. The clearest measure of what the pre-positioned posture bought.</li>
+      </ul>
+      <p class="rpts"><strong>Reports:</strong> <a href="https://www.fire.ca.gov/incidents/2025/1/22/hughes-fire">CAL FIRE incident page</a> · <a href="https://www.fire.ca.gov/incidents/2025/1/22/hughes-fire/updates/75b2863f-033d-4b56-aa76-550aec3caf8d">Day-1 update (1:11 PM)</a> · <a href="https://inciweb.wildfire.gov/incident-publication/caanf-hughes-fire/hughes-fire-evening-incident-update-01-23-2025">InciWeb day-2 update</a></p>
+    </div>
+
+    <div class="card">
+      <h2>Franklin Fire<span class="when">Dec 9, 2024 · Malibu</span></h2>
+      <div class="chips"><span class="chip">4,086 acres</span><span class="chip">20 destroyed · 28 damaged</span><span class="chip">0 deaths</span><span class="chip">8 d 22 h to 100%</span></div>
+      <ul class="timeline">
+        <li><span class="t">10:50 PM</span>Starts near Malibu Canyon Rd during a PDS Red Flag — a month before the January siege, under the same warning class.</li>
+        <li><span class="t">Overnight</span>Runs downslope through Malibu; Pepperdine students shelter in place as flames surround the campus. Minute-level initial-attack logs were never released.</li>
+        <li><span class="t">Dec 18 · 8:59 PM</span>100% contained at 4,086 acres (LACoFD + CAL FIRE Incident Management Team 4); 20 structures destroyed, 28 damaged, no deaths.</li>
+      </ul>
+      <p class="rpts"><strong>Reports:</strong> <a href="https://www.fire.ca.gov/incidents/2024/12/9/franklin-fire">CAL FIRE incident page</a></p>
+    </div>
+
+    <div class="card">
+      <h2>What the clocks say</h2>
+      <ul>
+        <li><strong>Dispatch was never the failure.</strong> Where logs exist, call-to-dispatch ran in about a minute and crews rolled immediately — inside NFPA-benchmark territory even on the worst day.</li>
+        <li><strong>The fatal minutes were alerting minutes.</strong> The Palisades' first order came 98 minutes after the 911 call, ~40 minutes after homes were burning; west Altadena's came 9 hours in. Both after-action reviews center on that clock, not the driving clock.</li>
+        <li><strong>Force-in-place beat force-en-route.</strong> Sunset (day-2 surge posture) died at 43 acres in ~22 hours; Hughes matched the big fires' spread rate but ended with nothing destroyed. The siege's response-time lesson is mostly a pre-deployment lesson — see page 1.</li>
+        <li><strong>Wind caps the response ceiling.</strong> Eaton's helicopters reached the fire in 18 minutes and were grounded 9 minutes later. Past ~60 mph gusts, no arrival time compensates.</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <p class="foot">Notes: all times Pacific. "First reported" uses the earliest documented report; where CAL FIRE's incident log differs from contemporaneous reporting, both are shown (log entries sometimes reflect administrative time). Minute-level call-processing / turnout / arrival data exist publicly only for the Palisades (records requests + LAFD AAR) and Eaton (McChrystal AAR) fires; the siege's simultaneous starts mean some initial-attack clocks may never be published. Tolls per official 2025–26 tallies. Compiled July 19, 2026.</p>
+</section>
 </div>
 <script>
 (function () {
@@ -1101,6 +1315,63 @@ svg.leaflet-image-layer.leaflet-interactive path {
   }
   wire('ly-stations', gStations); wire('ly-t1', gT1); wire('ly-t2', gT2);
   wire('ly-county', gCounty); wire('ly-fires25', gFires25); wire('ly-hist', gHist);
+  window.__predepMap = map;
+})();
+</script>
+<script>
+(function () {
+  /* ---- page tabs ---- */
+  var tabs = { map: document.getElementById('tab-map'), response: document.getElementById('tab-response') };
+  var pages = { map: document.getElementById('page-map'), response: document.getElementById('page-response') };
+  function show(key, setHash) {
+    Object.keys(pages).forEach(function (k) {
+      var on = (k === key);
+      pages[k].hidden = !on;
+      tabs[k].setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    if (setHash !== false) { try { history.replaceState(null, '', '#' + key); } catch (e) {} }
+    if (key === 'map' && window.__predepMap) {
+      setTimeout(function () { window.__predepMap.invalidateSize(); }, 60);
+    }
+    window.scrollTo(0, 0);
+  }
+  tabs.map.addEventListener('click', function () { show('map'); });
+  tabs.response.addEventListener('click', function () { show('response'); });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-goto]'), function (a) {
+    a.addEventListener('click', function (e) { e.preventDefault(); show(a.getAttribute('data-goto')); });
+  });
+  if (location.hash === '#response') show('response', false);
+
+  /* ---- containment-chart tooltip (hover + keyboard focus) ---- */
+  var tt = document.createElement('div');
+  tt.id = 'tt'; tt.hidden = true;
+  document.body.appendChild(tt);
+  function fill(row) {
+    tt.textContent = '';
+    var a = document.createElement('div'); a.className = 't1'; a.textContent = row.getAttribute('data-f') || '';
+    var b = document.createElement('div'); b.textContent = row.getAttribute('data-s') || '';
+    var c = document.createElement('div'); c.textContent = row.getAttribute('data-n') || '';
+    tt.appendChild(a); tt.appendChild(b); tt.appendChild(c);
+  }
+  function place(x, y) {
+    var pad = 14, w = tt.offsetWidth, h = tt.offsetHeight;
+    var nx = Math.min(x + pad, window.innerWidth - w - 8);
+    var ny = y + pad;
+    if (ny + h > window.innerHeight - 8) ny = y - h - pad;
+    tt.style.left = Math.max(nx, 8) + 'px';
+    tt.style.top = Math.max(ny, 8) + 'px';
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.brow'), function (row) {
+    row.addEventListener('pointerenter', function (e) { fill(row); tt.hidden = false; place(e.clientX, e.clientY); });
+    row.addEventListener('pointermove', function (e) { place(e.clientX, e.clientY); });
+    row.addEventListener('pointerleave', function () { tt.hidden = true; });
+    row.addEventListener('focus', function () {
+      fill(row); tt.hidden = false;
+      var r = row.getBoundingClientRect();
+      place(r.left + Math.min(r.width * 0.35, 260), r.top);
+    });
+    row.addEventListener('blur', function () { tt.hidden = true; });
+  });
 })();
 </script>
 </body>
